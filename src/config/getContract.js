@@ -38,7 +38,7 @@ const callRpc = async (chain, method, params = []) => {
     method,
     params,
     id: 1,
-  });
+  }, { timeout: 10000 });
 
   if (response.data.error) {
     throw new Error(`RPC error: ${response.data.error.message}`);

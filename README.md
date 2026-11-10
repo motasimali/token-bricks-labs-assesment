@@ -65,6 +65,66 @@ The server starts on `http://localhost:3001` by default.
 
 ---
 
+## Assessment Endpoint
+
+### `GET /api/MotasimAliApiTest`
+
+Reads the Wrapped Ether (WETH) contract on **Arbitrum One** using the existing
+`callRpc` helper. It fetches the latest block number, then reads `decimals()` and
+`totalSupply()` at that same block. The result is returned as JSON and printed
+to the server console.
+
+- **Contract:** `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1`
+- **Address reference:** [Arbitrum token bridge contracts](https://developer.arbitrum.io/chain-info#token-bridge-smart-contracts)
+- **RPC:** `https://arb1.arbitrum.io/rpc`
+- **Request parameters:** None. No wallet or API key is required.
+
+With the server running:
+
+```bash
+curl http://localhost:3001/api/MotasimAliApiTest
+```
+
+**Success — HTTP 200**
+
+Example response from a verified read; block number and supply change over time:
+
+```json
+{
+  "chain": "arbitrum",
+  "contractAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  "blockNumber": 523109075,
+  "decimals": 18,
+  "totalSupplyRaw": "123317910459975122806982",
+  "totalSupplyFormatted": "123317.910459975122806982"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `chain` | Chain key used by the RPC helper. |
+| `contractAddress` | WETH contract queried on Arbitrum One. |
+| `blockNumber` | Block used for both contract reads. |
+| `decimals` | Number of decimal places used by the token. |
+| `totalSupplyRaw` | Total supply in the token's smallest units, as a string. |
+| `totalSupplyFormatted` | Total supply in WETH units, as a decimal string. |
+
+Supply values use strings to preserve precision.
+
+**Failure — HTTP 502**
+
+If fetching or decoding fails, the endpoint logs the error and returns:
+
+```json
+{
+  "error": "Failed to fetch Arbitrum WETH data"
+}
+```
+
+Each RPC request has a 10-second timeout.
+
+---
+
 ## 📤 Submission
 
 Submit any one of:

@@ -3,6 +3,7 @@ const morgan = require("morgan");
 const cors = require("cors");
 const path = require("path");
 const killPort = require("kill-port");
+const { callRpc } = require("./config/getContract");
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
@@ -52,25 +53,49 @@ const checkPort = async (port, maxPort = 65535) => {
   app.use("/api/stats", require("./routes/stats"));
 
   /**
-   * @route    [HTTP_METHOD] /api/endpoint
-   * @desc     [Short summary of what this endpoint does, e.g., Reads or sets value in smart contract]
-   * @author   [Your Name]
-   * @access   [public/private/auth-required]
-   * @param    {Request}  req  - Express request object. [Describe relevant body/query/params fields]
-   * @param    {Response} res  - Express response object.
-   * @returns  {JSON}          [Describe the JSON structure returned]
-   * @throws   [Error conditions, e.g., 400 on invalid input, 500 on contract failure]
-   *
-   * @example
-   * // Example request
-   * curl -X POST http://localhost:3001/contract/value -H "Content-Type: application/json" -d '{"value": 42}'
-   *
-   * // Example response
-   * {
-   *   "message": "Value updated",
-   *   "txHash": "0x..."
-   * }
+   * Reads WETH decimals and total supply on Arbitrum at the same block.
+   * Logs and returns the result as JSON, with supply values represented as
+   * strings to preserve precision. Returns HTTP 502 if the read fails.
    */
+  app.get("/api/MotasimAliApiTest", async (req, res) => {
+    const chain = "arbitrum";
+    const contractAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+
+    try {
+      const block = await callRpc(chain, "eth_blockNumber");
+      const [decimalsHex, totalSupplyHex] = await Promise.all([
+        callRpc(chain, "eth_call", [
+          { to: contractAddress, data: "0x313ce567" }, // decimals()
+          block,
+        ]),
+        callRpc(chain, "eth_call", [
+          { to: contractAddress, data: "0x18160ddd" }, // totalSupply()
+          block,
+        ]),
+      ]);
+
+      const decimals = Number(BigInt(decimalsHex));
+      const totalSupplyRaw = BigInt(totalSupplyHex).toString();
+      const digits = totalSupplyRaw.padStart(decimals + 1, "0");
+      const totalSupplyFormatted = decimals === 0
+        ? totalSupplyRaw
+        : `${digits.slice(0, -decimals)}.${digits.slice(-decimals)}`;
+      const result = {
+        chain,
+        contractAddress,
+        blockNumber: Number(BigInt(block)),
+        decimals,
+        totalSupplyRaw,
+        totalSupplyFormatted,
+      };
+
+      console.log(result);
+      res.json(result);
+    } catch (error) {
+      console.error("Failed to fetch Arbitrum WETH data:", error.message);
+      res.status(502).json({ error: "Failed to fetch Arbitrum WETH data" });
+    }
+  });
 
   // Serve static files in production
   if (process.env.NODE_ENV === "production") {
