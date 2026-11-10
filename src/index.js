@@ -6,7 +6,8 @@ const killPort = require("kill-port");
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
-const dbHandler = require("./config/dbHandler.js");
+
+// const dbHandler = require("./config/dbHandler.js");
 
 const checkPort = async (port, maxPort = 65535) => {
   if (port > maxPort) {
@@ -44,7 +45,7 @@ const checkPort = async (port, maxPort = 65535) => {
   app.use(cors({ origin: `http://localhost:${final_port}` }));
   app.use(express.json());
   app.use(morgan("dev"));
-  dbHandler.connect();
+  // dbHandler.connect();
 
   // Routes
   app.use("/api/items", require("./routes/items"));
